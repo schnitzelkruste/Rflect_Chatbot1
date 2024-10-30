@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 import openai
 
@@ -15,7 +14,7 @@ openai_api_key = st.secrets["openai_api_key"]
 # Set up the OpenAI API key
 openai.api_key = openai_api_key
 
-# Initial assistant message with integrated prompt instructions
+# Initial assistant message
 initial_assistant_message = """
 Hello! I am your Reflection Buddy. I’m here to help you reflect on your experiences using the Gibbs Reflection Cycle. 
 Let's start by describing an event you'd like to reflect on. I’ll guide you through six phases to help you gain insights and set goals for growth.
@@ -42,7 +41,7 @@ if user_input := st.chat_input("Your response..."):
 
     # Generate a response from the Reflection Buddy using the OpenAI API
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4",  # Set to GPT-4
         messages=st.session_state.messages,
     )
 
@@ -53,4 +52,3 @@ if user_input := st.chat_input("Your response..."):
     st.session_state.messages.append({"role": "assistant", "content": assistant_message})
     with st.chat_message("assistant"):
         st.markdown(assistant_message)
-```
