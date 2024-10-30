@@ -1,12 +1,12 @@
 import streamlit as st
 import openai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Titel und Beschreibung anzeigen
 st.title("💬 Reflect Bot - Reflection Chatbot")
 st.write("Ein Chatbot, der Studenten hilft, ihren Lernfortschritt zu reflektieren, basierend auf dem Gibbs Reflection Cycle.")
-
-# OpenAI API-Schlüssel aus Streamlit Secrets abrufen
-openai.api_key = st.secrets["openai_api_key"]
 
 # Vollständiger Prompt für den Chatbot, der die Phasen des Gibbs Reflection Cycle enthält
 bot_instructions = """
@@ -41,12 +41,12 @@ if user_input := st.chat_input("Your response..."):
     # API-Anfrage zur Generierung der Antwort basierend auf der Konversation
     try:
         response = openai.chat.completions.create(
-            model="gpt-3.5-turbo",  # Oder das gewünschte Modell, z.B. "gpt-4"
+            model="gpt-4o-mini",  # Das gewünschte Modell angeben, z.B. "gpt-3.5-turbo" oder "gpt-4"
             messages=st.session_state.messages
         )
 
         # Extrahiere die Antwort
-        assistant_response = response["choices"][0]["message"]["content"]
+        assistant_response = response.choices[0].message.content
         
         # Antwort anzeigen und im Sitzungszustand speichern
         st.session_state.messages.append({"role": "assistant", "content": assistant_response})
