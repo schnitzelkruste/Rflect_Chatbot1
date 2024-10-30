@@ -1,15 +1,15 @@
 import streamlit as st
-import openai  # Nicht OpenAI, sondern direkt openai importieren
+import openai
+from pydantic import BaseModel
 
 # Titel und Beschreibung anzeigen
 st.title("💬 Reflect Bot - Reflection Chatbot")
 st.write("Ein Chatbot, der Studenten hilft, ihren Lernfortschritt zu reflektieren, basierend auf dem Gibbs Reflection Cycle.")
 
 # OpenAI API-Schlüssel aus Streamlit Secrets abrufen
-openai_api_key = st.secrets["openai_api_key"]
-openai.api_key = openai_api_key  # Direkt API-Key setzen
+openai.api_key = st.secrets["openai_api_key"]
 
-# Prompt-Text für den Chatbot definieren, basierend auf dem Gibbs Reflection Cycle
+# Vollständiger Prompt für den Chatbot, der die Phasen des Gibbs Reflection Cycle enthält
 bot_instructions = """
 Aim of the chatbot: You are a chatbot that helps students reflect on their learning progress. You guide them through the six phases of the Gibbs Reflection Cycle to promote deep insights and personal growth. If you realise that a phase needs more depth, you should also ask further questions that deepen the user's answers and thoughts. Only go to the next step when you realise that sufficient thought has been given.
 
@@ -78,13 +78,22 @@ Support with blockages:
 - If the student is struggling to progress, ask helpful intermediate questions or offer examples.
 """
 
+# Definition der Pydantic-Klassen für strukturierte Ausgabe
+class ReflectionStep(BaseModel):
+    explanation: str
+    user_response: str = ""
+
+class ReflectionResponse(BaseModel):
+    steps: list[ReflectionStep]
+    summary: str
+
 # Initialisiere den Sitzungszustand nur beim ersten Start
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": bot_instructions}]
 
-# Zeige bisherige Benutzer- und Assistenten-Nachrichten an (ohne den system prompt)
+# Zeige bisherige Benutzer- und Assistenten-Nachrichten an
 for message in st.session_state.messages:
-    if message["role"] != "system":  # System prompt nicht anzeigen
+    if message["role"] != "system":
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
 
@@ -95,18 +104,30 @@ if user_input := st.chat_input("Your response..."):
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Antwort von OpenAI generieren basierend auf vorherigen Nachrichten
+    # API-Anfrage zur Generierung der strukturierten Antwort basierend auf der Konversation
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Oder das spezifische GPT-4 Modell
-            messages=st.session_state.messages
-        ).choices[0].message["content"]
+            model="gpt-3.5-turbo-16k-0613",  # Beispielmodell
+            messages=st.session_state.messages,
+            functions=[{
+                "name": "ReflectionResponse",
+                "parameters": ReflectionResponse.schema()
+            }],
+            function_call={"name": "ReflectionResponse"}
+        )
 
-        # Antwort anzeigen und im Sitzungszustand speichern
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Extrahiere und speichere die strukturierte Antwort
+        reflection_response = ReflectionResponse(**response["choices"][0]["message"]["content"]["parsed"])
+        st.session_state.messages.append({
+            "role": "assistant", 
+            "content": "\n".join([step.explanation for step in reflection_response.steps])
+        })
+
+        # Antwort anzeigen
         with st.chat_message("assistant"):
-            st.markdown(response)
+            for step in reflection_response.steps:
+                st.markdown(f"**Step Explanation**: {step.explanation}")
 
-    except Exception as e:
+    except openai.error.OpenAIError as e:
         st.error("Ein Fehler ist aufgetreten. Bitte überprüfe die API-Konfiguration oder versuche es später erneut.")
         st.write(e)
