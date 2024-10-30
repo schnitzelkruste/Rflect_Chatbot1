@@ -2,25 +2,20 @@ import streamlit as st
 import openai
 from langchain.prompts import ChatPromptTemplate
 
-# Show title and description.
-st.title("💬 Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you don't need to provide an OpenAI API key."
-)
+# Set up page
+st.set_page_config(page_title="Simple Chatbot", layout="centered")
+st.title("💬 Simple Chatbot")
+st.write("This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses.")
 
-# Retrieve the OpenAI API key from Streamlit secrets
+# Load API key from secrets
 openai_api_key = st.secrets["openai_api_key"]
-
-# Set up the OpenAI API key
 openai.api_key = openai_api_key
 
-# Create a session state variable to store the chat messages. This ensures that the
-# messages persist across reruns.
+# Initialize session state for chat messages
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display the existing chat messages
+# Display chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -31,7 +26,7 @@ prompt_template = ChatPromptTemplate.from_template(
     Use the following pieces of information to answer the user's question.
     If you don't know the answer, just say that you don't know, don't try to make up an answer.
 
-    Context: {context}
+    Context: Chatbot conversation history
     Question: {question}
 
     Only return the helpful answer below and nothing else.
@@ -39,25 +34,26 @@ prompt_template = ChatPromptTemplate.from_template(
     """
 )
 
-# Create a chat input field to allow the user to enter a message.
-if user_input := st.chat_input("What is up?"):
-
-    # Store and display the user's message
-    st.session_state.messages.append({"role": "user", "content": user_input})
+# Get user input and process
+user_question = st.chat_input("Your question...")
+if user_question:
+    st.session_state.messages.append({"role": "user", "content": user_question})
     with st.chat_message("user"):
-        st.markdown(user_input)
+        st.markdown(user_question)
 
-    # Generate a prompt with context and question
-    prompt = prompt_template.format(context="Chatbot conversation history.", question=user_input)
+    # Format prompt using template
+    prompt = prompt_template.format(question=user_question)
 
-    # Call the OpenAI API to generate a response
+    # Call OpenAI API to generate response
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "system", "content": prompt}]
     )
 
-    # Extract and display the assistant's response
+    # Extract and display response
     assistant_message = response['choices'][0]['message']['content']
     st.session_state.messages.append({"role": "assistant", "content": assistant_message})
     with st.chat_message("assistant"):
         st.markdown(assistant_message)
+
+st.write("Ask any question above, and the chatbot will respond!")
