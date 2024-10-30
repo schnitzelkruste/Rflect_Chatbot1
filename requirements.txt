@@ -1,3 +1,9 @@
 streamlit
 openai
-langchain
+langchain-community
+langchain-text-splitters
+langchain_huggingface
+faiss-cpu
+langchain_core
+huggingface_hub
+langchain-groq
