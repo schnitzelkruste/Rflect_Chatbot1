@@ -2,6 +2,7 @@ import streamlit as st
 import openai
 import os
 import time
+import asyncio
 
 # OpenAI API-Key aus Umgebungsvariablen laden
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -39,17 +40,23 @@ if user_input:
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # API-Aufruf vorbereiten
-    try:
-        response = openai.ChatCompletion.create(
+    # Asynchroner API-Aufruf mit der neuen `acreate`-Methode
+    async def fetch_response():
+        response = await openai.ChatCompletion.acreate(
             model="gpt-3.5-turbo",
             messages=st.session_state.messages,
         )
-        assistant_response = response['choices'][0]['message']['content']
+        return response['choices'][0]['message']['content']
+
+    # Stream die Antwort und füge sie zur Session State hinzu
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        assistant_response = loop.run_until_complete(fetch_response())
+
         with st.chat_message("assistant"):
             streamed_response = stream_response(assistant_response)
 
-        # Antwort zur Session hinzufügen
         st.session_state.messages.append({"role": "assistant", "content": streamed_response})
     except Exception as e:
         st.error(f"An error occurred: {e}")
