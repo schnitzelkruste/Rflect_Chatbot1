@@ -1,62 +1,81 @@
 import streamlit as st
-import openai
-import os
-import time
-import asyncio
+from openai import OpenAI
+from pydantic import BaseModel
 
-# OpenAI API-Key aus Umgebungsvariablen laden
-openai_api_key = os.getenv("OPENAI_API_KEY")
-openai.api_key = openai_api_key
+# Titel und Beschreibung anzeigen
+st.title("💬 Reflect Bot - Reflection Chatbot")
+st.write("Ein Chatbot, der Studenten hilft, ihren Lernfortschritt zu reflektieren, basierend auf dem Gibbs Reflection Cycle.")
 
-# Konfiguriere die Streamlit-Seite
-st.set_page_config(page_title="Simple Chatbot", layout="centered")
-st.title("💬 Simple Chatbot")
-st.write("This chatbot uses OpenAI's GPT model to answer questions.")
+# OpenAI API-Schlüssel aus Streamlit Secrets abrufen
+openai_api_key = st.secrets["openai_api_key"]
+client = OpenAI(api_key=openai_api_key)
 
-# Initialisiere Variablen in der Session State
+# Prompt-Text für den Chatbot definieren, basierend auf dem Gibbs Reflection Cycle
+bot_instructions = """
+Aim of the chatbot: You are a chatbot that helps students reflect on their learning progress. You guide them through the six phases of the Gibbs Reflection Cycle to promote deep insights and personal growth. If you realise that a phase needs more depth, you should also ask further questions that deepen the user's answers and thoughts. Only go to the next step when you realise that sufficient thought has been given.
+Instructions for the conversation:
+Greeting:
+Start with a friendly and welcoming greeting.
+Introduce yourself briefly and explain your role.
+Phase 1 - Description:
+Ask the student to describe the event or experience.
+Ask open questions to get details.
+Example: ‘Can you tell me exactly what happened?’
+Phase 2 - Feelings:
+Ask about feelings and thoughts during the experience.
+Encourage honesty and self-reflection.
+Example: ‘How did you feel at that moment?’
+Phase 3 - Evaluation:
+Ask for an assessment of what went well and what went less well.
+Encourage a balanced view.
+Example: ‘In your opinion, what went well and what could have been better?’
+Phase 4 - Analysis:
+Help identify the reasons for success or failure.
+Ask questions that encourage deeper reflection.
+Example: ‘Why do you think it went like this?’
+Phase 5 - Conclusion:
+Assist in drawing lessons from the experience.
+Ask for insights and learning moments.
+Example: ‘What have you learnt from this experience?’
+Phase 6 - Action plan:
+Encourage planning concrete steps for the future.
+Help to set realistic goals.
+Example: ‘What will you do differently next time?’
+Conclusion:
+Summarise the key points.
+Offer further support or resources if appropriate.
+Say goodbye politely and encouragingly.
+Provide an action plan on how the user should proceed to put what has been reflected into action.
+"""
+
+# Begrüßung und Einleitung festlegen, falls noch keine Sitzung gestartet wurde
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "system", "content": "You are a helpful assistant."}]
+    st.session_state.messages = [
+        {"role": "system", "content": bot_instructions},
+        {"role": "assistant", "content": "Hello! I’m Reflect Bot, here to help you reflect on your learning journey using the Gibbs Reflection Cycle. Let’s start with a description of an event or experience you’d like to reflect on. Can you tell me more about it?"}
+    ]
 
-# Funktion zum Streamen der Antwort
-def stream_response(response_text):
-    message_placeholder = st.empty()
-    full_response = ""
-    for char in response_text:
-        full_response += char
-        message_placeholder.markdown(full_response + "▌")
-        time.sleep(0.02)
-    message_placeholder.markdown(full_response)
-    return full_response
-
-# Chatverlauf anzeigen
+# Zeige bisherige Nachrichten an
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Eingabe des Benutzers
-user_input = st.chat_input("Ask me anything...")
-if user_input:
+# Chat-Eingabefeld für Benutzernachrichten
+if user_input := st.chat_input("Your response..."):
     st.session_state.messages.append({"role": "user", "content": user_input})
     with st.chat_message("user"):
         st.markdown(user_input)
 
-    # Asynchroner API-Aufruf mit der neuen `acreate`-Methode
-    async def fetch_response():
-        response = await openai.ChatCompletion.acreate(
-            model="gpt-3.5-turbo",
-            messages=st.session_state.messages,
-        )
-        return response['choices'][0]['message']['content']
+    # Antwort von OpenAI generieren basierend auf vorherigen Nachrichten
+    response = client.chat.completions.create(
+        model="gpt-4o-2024-08-06",
+        messages=[
+            {"role": msg["role"], "content": msg["content"]}
+            for msg in st.session_state.messages
+        ]
+    ).choices[0].message["content"]
 
-    # Stream die Antwort und füge sie zur Session State hinzu
-    try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        assistant_response = loop.run_until_complete(fetch_response())
-
-        with st.chat_message("assistant"):
-            streamed_response = stream_response(assistant_response)
-
-        st.session_state.messages.append({"role": "assistant", "content": streamed_response})
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
+    # Antwort anzeigen und im Sitzungszustand speichern
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+        st.markdown(response)
