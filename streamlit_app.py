@@ -32,13 +32,15 @@ Instructions:
 # Initialize the chat messages without displaying the reflection prompt
 if "messages" not in st.session_state:
     st.session_state.messages = [
+        {"role": "system", "content": reflection_prompt},  # Only for API, not displayed in the UI
         {"role": "assistant", "content": "Hello! I am your Reflection Buddy. I'm here to guide you through a structured reflection process to help you gain insights and grow from your experiences. Let's start by describing an event or experience you’d like to reflect on. Can you tell me exactly what happened?"}
     ]
 
-# Display the existing chat messages
+# Display the existing chat messages without showing the system prompt
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] != "system":
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
 # Create a chat input field for user responses
 if user_input := st.chat_input("Your response..."):
@@ -49,13 +51,15 @@ if user_input := st.chat_input("Your response..."):
         st.markdown(user_input)
 
     # Generate a response from the Reflection Buddy using the OpenAI API with the reflection prompt
-    response = client.chat.completions.create(
+    response = client.chat_completions.create(
         model="gpt-3.5-turbo",
-        messages=[{"role": "system", "content": reflection_prompt}] + st.session_state.messages,
+        messages=st.session_state.messages,
     )
 
+    # Retrieve the assistant's message content with error handling
+    assistant_message = response['choices'][0]['message']['content'] if 'choices' in response and response['choices'] else "I'm sorry, I couldn't generate a response."
+
     # Display and store the assistant's response in session state
-    assistant_message = response.choices[0].message["content"]
     st.session_state.messages.append({"role": "assistant", "content": assistant_message})
     with st.chat_message("assistant"):
         st.markdown(assistant_message)
