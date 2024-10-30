@@ -3,9 +3,9 @@ import openai
 from langchain.prompts import ChatPromptTemplate
 
 # Set up page
-st.set_page_config(page_title="Simple Chatbot", layout="centered")
-st.title("💬 Simple Chatbot")
-st.write("This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses.")
+st.set_page_config(page_title="Reflect Chatbot", layout="centered")
+st.title("💬 Rflect Chatbot")
+st.write("Hier wird nachher stehen, was wir den Usern als Instruction mitgeben wollen.")
 
 # Load API key from secrets
 openai_api_key = st.secrets["openai_api_key"]
@@ -42,7 +42,21 @@ if user_question:
         st.markdown(user_question)
 
     # Format prompt using template
-    prompt = prompt_template.format(question=user_question)
+   prompt = ChatPromptTemplate.from_template(
+"""
+Use the following pieces of information to answer the user's question.
+If you don't know the answer, just say that you don't know, don't try to make up an answer.
+
+Context: {context}
+Question: {question}
+
+Only return the helpful answer below and nothing else.
+Helpful answer:
+"""
+)
+
+parser = StrOutputParser()
+
 
     # Call OpenAI API to generate response
     response = openai.ChatCompletion.create(
