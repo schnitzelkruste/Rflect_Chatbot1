@@ -41,7 +41,7 @@ if user_input := st.chat_input("Your response..."):
     # API-Anfrage zur Generierung der Antwort basierend auf der Konversation
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Das gewünschte Modell angeben, z.B. "gpt-3.5-turbo" oder "gpt-4"
+            model="gpt-3.5-turbo",  # Oder das gewünschte Modell, z.B. "gpt-4"
             messages=st.session_state.messages
         )
 
@@ -53,6 +53,6 @@ if user_input := st.chat_input("Your response..."):
         with st.chat_message("assistant"):
             st.markdown(assistant_response)
 
-    except openai.error.OpenAIError as e:
+    except Exception as e:
         st.error("Ein Fehler ist aufgetreten. Bitte überprüfe die API-Konfiguration oder versuche es später erneut.")
         st.write(e)
