@@ -41,7 +41,7 @@ if user_input := st.chat_input("Your response..."):
 
     # Generate a response from the Reflection Buddy using the OpenAI API
     response = openai.ChatCompletion.create(
-        model="gpt-4",  # Set to GPT-4
+        model="gpt-4",  # Make sure you have access to GPT-4
         messages=st.session_state.messages,
     )
 
