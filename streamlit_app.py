@@ -1,12 +1,12 @@
 import streamlit as st
 import openai
-from dotenv import load_dotenv
 
-load_dotenv()
 
 # Titel und Beschreibung anzeigen
 st.title("💬 Reflect Bot - Reflection Chatbot")
 st.write("Ein Chatbot, der Studenten hilft, ihren Lernfortschritt zu reflektieren, basierend auf dem Gibbs Reflection Cycle.")
+
+openai.api_key = st.secrets["openai_api_key"]
 
 # Vollständiger Prompt für den Chatbot, der die Phasen des Gibbs Reflection Cycle enthält
 bot_instructions = """
