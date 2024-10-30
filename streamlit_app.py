@@ -40,7 +40,7 @@ if user_input := st.chat_input("Your response..."):
 
     # API-Anfrage zur Generierung der Antwort basierend auf der Konversation
     try:
-        response = openai.ChatCompletion.create(
+        response = openai.chat.completions.create(
             model="gpt-3.5-turbo",  # Oder das gewünschte Modell, z.B. "gpt-4"
             messages=st.session_state.messages
         )
