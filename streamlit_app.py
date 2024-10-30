@@ -1,5 +1,5 @@
 import streamlit as st
-from openai import OpenAI
+import openai
 
 # Show title and description.
 st.title("💬 Reflection Buddy")
@@ -11,8 +11,8 @@ st.write(
 # Retrieve the OpenAI API key from Streamlit secrets
 openai_api_key = st.secrets["openai_api_key"]
 
-# Create an OpenAI client.
-client = OpenAI(api_key=openai_api_key)
+# Set up the OpenAI API key
+openai.api_key = openai_api_key
 
 # Define the Reflection Buddy prompt with instructions for the chatbot
 reflection_prompt = """
@@ -51,7 +51,7 @@ if user_input := st.chat_input("Your response..."):
         st.markdown(user_input)
 
     # Generate a response from the Reflection Buddy using the OpenAI API with the reflection prompt
-    response = client.chat_completions.create(
+    response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=st.session_state.messages,
     )
