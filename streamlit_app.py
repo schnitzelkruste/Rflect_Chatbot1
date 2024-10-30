@@ -1,6 +1,5 @@
 import streamlit as st
-from openai import OpenAI
-from pydantic import BaseModel
+import openai  # Nicht OpenAI, sondern direkt openai importieren
 
 # Titel und Beschreibung anzeigen
 st.title("💬 Reflect Bot - Reflection Chatbot")
@@ -8,7 +7,7 @@ st.write("Ein Chatbot, der Studenten hilft, ihren Lernfortschritt zu reflektiere
 
 # OpenAI API-Schlüssel aus Streamlit Secrets abrufen
 openai_api_key = st.secrets["openai_api_key"]
-client = OpenAI(api_key=openai_api_key)
+openai.api_key = openai_api_key  # Direkt API-Key setzen
 
 # Prompt-Text für den Chatbot definieren, basierend auf dem Gibbs Reflection Cycle
 bot_instructions = """
@@ -98,7 +97,7 @@ if user_input := st.chat_input("Your response..."):
 
     # Antwort von OpenAI generieren basierend auf vorherigen Nachrichten
     try:
-        response = client.chat_completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # Oder das spezifische GPT-4 Modell
             messages=st.session_state.messages
         ).choices[0].message["content"]
